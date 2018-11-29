@@ -1,0 +1,25 @@
+{
+  "parser": "babel-eslint",
+  "env": {
+    "browser": true,
+    "react-native/react-native": true
+  },
+  "plugins": [
+    "react",
+    "react-native",
+  ],
+  "extends": [
+    "fbjs",
+    "plugin:react/all"
+  ],
+  "rules": {
+    "react/jsx-max-depth": 0,
+    "react/jsx-indent": [1, 2],
+    "react/jsx-indent-props": [1, 2],
+    "react/forbid-component-props": 0,
+    "react/no-set-state": 0,
+    "react/prop-types": 0,
+    "react-native/no-unused-styles": 2,
+    "react-native/no-inline-styles": 2,
+  }
+}
