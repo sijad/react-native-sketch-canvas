@@ -51,9 +51,9 @@ type Props = {
   },
   onPathsChange: (e: any) => void,
   onSketchSaved: (a: any, b: any) => void,
-  onStrokeEnd: (e: any) => void,
-  onStrokeChanged: (x: number, y: number) => void,
-  onStrokeStart: (x: number, y: number) => void,
+  onStrokeEnd: (path: Path) => void,
+  onStrokeChanged: (x: number, y: number, path: PathData) => void,
+  onStrokeStart: (path: PathData) => void,
   scale: number,
   strokeColor: string,
   strokeWidth: number,
@@ -122,20 +122,12 @@ class SketchCanvas extends Component<Props, States> {
           data: [],
         };
 
-        UIManager.dispatchViewManagerCommand(
-          this._handle,
-          UIManager.RNSketchCanvas.Commands.newPath,
-          [
-            this._path.id,
-            processColor(this._path.color),
-            (this._path && this._path.width || 0) * SCREEN_SCALE,
-          ]
-        );
+        this.newPath(pathCount, strokeColor, strokeWidth);
 
         const x = parseFloat((gestureState.x0 - this._offset.x).toFixed(2));
         const y = parseFloat((gestureState.y0 - this._offset.y).toFixed(2));
         this.addPoint(x, y);
-        onStrokeStart(x, y);
+        this._path && onStrokeStart(this._path);
       },
       onPanResponderMove: (evt, gestureState) => {
         const {
@@ -154,7 +146,7 @@ class SketchCanvas extends Component<Props, States> {
           const x = parseFloat(px.toFixed(2));
           const y = parseFloat(py.toFixed(2));
           this.addPoint(x, y);
-          onStrokeChanged(x, y);
+          this._path && onStrokeChanged(x, y, this._path);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
@@ -195,11 +187,7 @@ class SketchCanvas extends Component<Props, States> {
           onStrokeEnd(path);
         }
 
-        UIManager.dispatchViewManagerCommand(
-          this._handle,
-          UIManager.RNSketchCanvas.Commands.endPath,
-          []
-        );
+        this.endPath();
       },
 
       onShouldBlockNativeResponder: (evt, gestureState) => {
@@ -222,11 +210,31 @@ class SketchCanvas extends Component<Props, States> {
   _path: ?PathData;
   _offset: Pos;
 
-  addPoint(x: number, y: number) {
-    if (!this._path) {
-      return;
-    }
+  newPath(id: number, color: string, width: number) {
+    UIManager.dispatchViewManagerCommand(
+      this._handle,
+      UIManager.RNSketchCanvas.Commands.newPath,
+      [
+        id,
+        processColor(color),
+        width * SCREEN_SCALE,
+      ]
+    );
+  }
 
+  addScalePoint(x: number, y: number, width: number, height: number) {
+    const {
+      width: w,
+      height: h,
+    } = this.state;
+
+    this.addPoint(
+      x * w / width,
+      y * h / height,
+    );
+  }
+
+  addPoint(x: number, y: number) {
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.addPoint,
@@ -237,6 +245,14 @@ class SketchCanvas extends Component<Props, States> {
     );
 
     this._path && this._path.data.push(`${x},${y}`);
+  }
+
+  endPath() {
+    UIManager.dispatchViewManagerCommand(
+      this._handle,
+      UIManager.RNSketchCanvas.Commands.endPath,
+      []
+    );
   }
 
   clear() {
@@ -298,9 +314,11 @@ class SketchCanvas extends Component<Props, States> {
       pathCount: pathCount + 1,
     });
 
-    const pathData = data.path.data.map(p => {
-      const coor = p.split(',').map(pp => parseFloat(pp).toFixed(2));
-      return `${coor[0] * SCREEN_SCALE * width / data.size.width},${coor[1] * SCREEN_SCALE * height / data.size.height}`;
+    const pathData = data.path.data.map((p: string) => {
+      const coor = p.split(',').map(pp => parseFloat(pp));
+      const x = coor[0] * SCREEN_SCALE * width / data.size.width;
+      const y = coor[1] * SCREEN_SCALE * height / data.size.height;
+      return `${x},${y}`;
     });
 
     UIManager.dispatchViewManagerCommand(
