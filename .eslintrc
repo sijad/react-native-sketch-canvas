@@ -19,6 +19,7 @@
     "react/forbid-component-props": 0,
     "react/no-set-state": 0,
     "react/prop-types": 0,
+    "react/jsx-filename-extension": 0,
     "react-native/no-unused-styles": 2,
     "react-native/no-inline-styles": 2,
   }
