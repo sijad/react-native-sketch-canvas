@@ -70,6 +70,7 @@ type States = {
   height: number,
   paths: Array<Path>,
   pathsToProcess: Array<Path>,
+  pathCount: number,
 }
 
 class SketchCanvas extends Component<Props, States> {
@@ -108,10 +109,14 @@ class SketchCanvas extends Component<Props, States> {
 
         if (!touchEnabled) {return;}
 
+        const {
+          pathCount,
+        } = this.state;
+
         const e = evt.nativeEvent;
         this._offset = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
         this._path = {
-          id: parseInt(Math.random() * 100000000, 10),
+          id: pathCount,
           color: strokeColor,
           width: strokeWidth,
           data: [],
@@ -187,6 +192,7 @@ class SketchCanvas extends Component<Props, States> {
             paths,
             width,
             height,
+            pathCount,
           } = this.state;
 
           const path = {
@@ -203,6 +209,7 @@ class SketchCanvas extends Component<Props, States> {
               ...paths,
               path,
             ],
+            pathCount: pathCount + 1,
           });
           onStrokeEnd(path);
         }
@@ -227,6 +234,7 @@ class SketchCanvas extends Component<Props, States> {
     // text: null,
     paths: [],
     pathsToProcess: [],
+    pathCount: 0,
   }
 
   _panResponder: any;
@@ -268,25 +276,29 @@ class SketchCanvas extends Component<Props, States> {
       initialized,
       paths,
       pathsToProcess,
+      pathCount,
       width,
       height,
     } = this.state;
 
-    if (!initialized) {
-      if (!pathsToProcess.find(p => p.path.id == data.path.id)) {
-        this.setState({
-          paths: [
-            ...paths,
-            data,
-          ],
-        });
-      }
+    if (!initialized && !pathsToProcess.find(p => p.path.id == data.path.id)) {
+      this.setState({
+        pathsToProcess: [
+          ...pathsToProcess,
+          data,
+        ],
+      });
       return;
     }
 
     if (!paths.find(p => p.path.id === data.path.id)) {
       paths.push(data);
     }
+
+    this.setState({
+      paths: [...paths],
+      pathCount: pathCount + 1,
+    });
 
     const pathData = data.path.data.map(p => {
       const coor = p.split(',').map(pp => parseFloat(pp).toFixed(2));
