@@ -132,19 +132,9 @@ class SketchCanvas extends Component<Props, States> {
           ]
         );
 
-        UIManager.dispatchViewManagerCommand(
-          this._handle,
-          UIManager.RNSketchCanvas.Commands.addPoint,
-          [
-            parseFloat(((gestureState.x0 - this._offset.x) * SCREEN_SCALE).toFixed(2)),
-            parseFloat(((gestureState.y0 - this._offset.y) * SCREEN_SCALE).toFixed(2)),
-          ]
-        );
-
         const x = parseFloat((gestureState.x0 - this._offset.x).toFixed(2));
         const y = parseFloat((gestureState.y0 - this._offset.y).toFixed(2));
-
-        this._path && this._path.data.push(`${x},${y}`);
+        this.addPoint(x, y);
         onStrokeStart(x, y);
       },
       onPanResponderMove: (evt, gestureState) => {
@@ -159,20 +149,11 @@ class SketchCanvas extends Component<Props, States> {
         }
 
         if (this._path) {
-          const x = parseFloat((gestureState.x0 + gestureState.dx / scale - this._offset.x).toFixed(2));
-          const y = parseFloat((gestureState.y0 + gestureState.dy / scale - this._offset.y).toFixed(2));
-
-          UIManager.dispatchViewManagerCommand(
-            this._handle,
-            UIManager.RNSketchCanvas.Commands.addPoint,
-            [
-              parseFloat(x * SCREEN_SCALE),
-              parseFloat(y * SCREEN_SCALE),
-            ]
-          );
-
-          this._path && this._path.data.push(`${x},${y}`);
-
+          const px = gestureState.x0 + gestureState.dx / scale - this._offset.x;
+          const py = gestureState.y0 + gestureState.dy / scale - this._offset.y;
+          const x = parseFloat(px.toFixed(2));
+          const y = parseFloat(py.toFixed(2));
+          this.addPoint(x, y);
           onStrokeChanged(x, y);
         }
       },
@@ -240,6 +221,23 @@ class SketchCanvas extends Component<Props, States> {
   _panResponder: any;
   _path: ?PathData;
   _offset: Pos;
+
+  addPoint(x: number, y: number) {
+    if (!this._path) {
+      return;
+    }
+
+    UIManager.dispatchViewManagerCommand(
+      this._handle,
+      UIManager.RNSketchCanvas.Commands.addPoint,
+      [
+        x * SCREEN_SCALE,
+        y * SCREEN_SCALE,
+      ]
+    );
+
+    this._path && this._path.data.push(`${x},${y}`);
+  }
 
   clear() {
     this._path = null;
@@ -398,7 +396,6 @@ class SketchCanvas extends Component<Props, States> {
         onLayout={this.handleOnLayout}
         ref={this.handleRef}
         style={style}
-        text={[]}
       />
     );
   }
