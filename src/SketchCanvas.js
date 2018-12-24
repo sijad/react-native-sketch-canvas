@@ -295,13 +295,15 @@ class SketchCanvas extends Component<Props, States> {
       height,
     } = this.state;
 
-    if (!initialized && !pathsToProcess.find(p => p.path.id == data.path.id)) {
-      this.setState({
-        pathsToProcess: [
-          ...pathsToProcess,
-          data,
-        ],
-      });
+    if (!initialized) {
+      if (!pathsToProcess.find(p => p.path.id == data.path.id)) {
+        this.setState({
+          pathsToProcess: [
+            ...pathsToProcess,
+            data,
+          ],
+        });
+      }
       return;
     }
 
@@ -362,15 +364,15 @@ class SketchCanvas extends Component<Props, States> {
       pathsToProcess,
     } = this.state;
 
-    if (pathsToProcess.length > 0) {
-      pathsToProcess.forEach(p => this.addPath(p));
-    }
-
     this.setState({
       initialized: true,
       width: e.nativeEvent.layout.width,
       height: e.nativeEvent.layout.height,
       pathsToProcess: [],
+    }, () => {
+      if (pathsToProcess.length > 0) {
+        pathsToProcess.forEach(p => this.addPath(p));
+      }
     });
   }
 
