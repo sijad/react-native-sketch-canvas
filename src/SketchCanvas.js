@@ -1,4 +1,5 @@
 // @flow
+
 import React, { Component } from 'react';
 import ReactNative, {
   requireNativeComponent,
@@ -12,7 +13,7 @@ import ReactNative, {
 type Pos = {
   x: number,
   y: number,
-}
+};
 
 type Text = {
   text: string,
@@ -25,7 +26,7 @@ type Text = {
   coordinate: 'Absolute' | 'Ratio',
   alignment: 'Left' | 'Center' | 'Right',
   lineHeightMultiple: number,
-}
+};
 
 type Path = {
   drawer: string,
@@ -34,14 +35,14 @@ type Path = {
     height: number,
   },
   path: PathData,
-}
+};
 
 type PathData = {
   id: number,
   color: string,
   width: number,
-  data: Array<string>
-}
+  data: Array<string>,
+};
 
 type Props = {
   localSourceImage: {
@@ -61,7 +62,7 @@ type Props = {
   text: Array<Text>,
   touchEnabled: boolean,
   user: string,
-}
+};
 
 type States = {
   // text: any, // FIXME
@@ -69,18 +70,17 @@ type States = {
   width: number,
   height: number,
   paths: Array<Path>,
-  pathsToProcess: Array<Path>,
   pathCount: number,
-}
+};
 
 class SketchCanvas extends Component<Props, States> {
   static defaultProps = {
     localSourceImage: null,
-    onPathsChange: () => { },
-    onSketchSaved: () => { },
-    onStrokeChanged: () => { },
-    onStrokeEnd: () => { },
-    onStrokeStart: () => { },
+    onPathsChange: () => {},
+    onSketchSaved: () => {},
+    onStrokeChanged: () => {},
+    onStrokeEnd: () => {},
+    onStrokeStart: () => {},
     scale: 1,
     strokeColor: '#000000',
     strokeWidth: 3,
@@ -107,11 +107,11 @@ class SketchCanvas extends Component<Props, States> {
           onStrokeStart,
         } = this.props;
 
-        if (!touchEnabled) {return;}
+        if (!touchEnabled) {
+          return;
+        }
 
-        const {
-          pathCount,
-        } = this.state;
+        const { pathCount } = this.state;
 
         const e = evt.nativeEvent;
         this._offset = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
@@ -130,11 +130,7 @@ class SketchCanvas extends Component<Props, States> {
         this._path && onStrokeStart(this._path);
       },
       onPanResponderMove: (evt, gestureState) => {
-        const {
-          touchEnabled,
-          scale,
-          onStrokeChanged,
-        } = this.props;
+        const { touchEnabled, scale, onStrokeChanged } = this.props;
 
         if (!touchEnabled) {
           return;
@@ -150,23 +146,14 @@ class SketchCanvas extends Component<Props, States> {
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        const {
-          touchEnabled,
-          onStrokeEnd,
-          user,
-        } = this.props;
+        const { touchEnabled, onStrokeEnd, user } = this.props;
 
         if (!touchEnabled) {
           return;
         }
 
         if (this._path) {
-          const {
-            paths,
-            width,
-            height,
-            pathCount,
-          } = this.state;
+          const { paths, width, height, pathCount } = this.state;
 
           const path = {
             path: this._path,
@@ -178,10 +165,7 @@ class SketchCanvas extends Component<Props, States> {
           };
 
           this.setState({
-            paths: [
-              ...paths,
-              path,
-            ],
+            paths: [...paths, path],
             pathCount: pathCount + 1,
           });
           onStrokeEnd(path);
@@ -202,10 +186,10 @@ class SketchCanvas extends Component<Props, States> {
     height: 0,
     // text: null,
     paths: [],
-    pathsToProcess: [],
     pathCount: 0,
-  }
+  };
 
+  _pathsToProcess: Array<Path> = [];
   _panResponder: any;
   _path: ?PathData;
   _offset: Pos;
@@ -214,34 +198,21 @@ class SketchCanvas extends Component<Props, States> {
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.newPath,
-      [
-        id,
-        processColor(color),
-        width * SCREEN_SCALE,
-      ]
+      [id, processColor(color), width * SCREEN_SCALE],
     );
   }
 
   addScalePoint(x: number, y: number, width: number, height: number) {
-    const {
-      width: w,
-      height: h,
-    } = this.state;
+    const { width: w, height: h } = this.state;
 
-    this.addPoint(
-      x * w / width,
-      y * h / height,
-    );
+    this.addPoint((x * w) / width, (y * h) / height);
   }
 
   addPoint(x: number, y: number) {
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.addPoint,
-      [
-        x * SCREEN_SCALE,
-        y * SCREEN_SCALE,
-      ]
+      [x * SCREEN_SCALE, y * SCREEN_SCALE],
     );
 
     this._path && this._path.data.push(`${x},${y}`);
@@ -251,7 +222,7 @@ class SketchCanvas extends Component<Props, States> {
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.endPath,
-      []
+      [],
     );
   }
 
@@ -263,46 +234,33 @@ class SketchCanvas extends Component<Props, States> {
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.clear,
-      []
+      [],
     );
   }
 
   undo() {
-    const {
-      user,
-    } = this.props;
+    const { user } = this.props;
 
-    const {
-      paths,
-    } = this.state;
+    const { paths } = this.state;
 
     let lastId = -1;
 
-    paths.forEach(d => lastId = d.drawer === user ? d.path.id : lastId);
+    paths.forEach(d => (lastId = d.drawer === user ? d.path.id : lastId));
 
-    if (lastId >= 0) {this.deletePath(lastId);}
+    if (lastId >= 0) {
+      this.deletePath(lastId);
+    }
 
     return lastId;
   }
 
-  addPath(data: any) { // FIXME
-    const {
-      initialized,
-      paths,
-      pathsToProcess,
-      pathCount,
-      width,
-      height,
-    } = this.state;
+  addPath(data: any) {
+    // FIXME
+    const { initialized, paths, pathCount, width, height } = this.state;
 
     if (!initialized) {
-      if (!pathsToProcess.find(p => p.path.id == data.path.id)) {
-        this.setState({
-          pathsToProcess: [
-            ...pathsToProcess,
-            data,
-          ],
-        });
+      if (!this._pathsToProcess.find(p => p.path.id == data.path.id)) {
+        this._pathsToProcess.push(data);
       }
       return;
     }
@@ -318,8 +276,8 @@ class SketchCanvas extends Component<Props, States> {
 
     const pathData = data.path.data.map((p: string) => {
       const coor = p.split(',').map(pp => parseFloat(pp));
-      const x = coor[0] * SCREEN_SCALE * width / data.size.width;
-      const y = coor[1] * SCREEN_SCALE * height / data.size.height;
+      const x = (coor[0] * SCREEN_SCALE * width) / data.size.width;
+      const y = (coor[1] * SCREEN_SCALE * height) / data.size.height;
       return `${x},${y}`;
     });
 
@@ -331,14 +289,12 @@ class SketchCanvas extends Component<Props, States> {
         processColor(data.path.color),
         data.path.width * SCREEN_SCALE,
         pathData,
-      ]
+      ],
     );
   }
 
   deletePath(id: number) {
-    const {
-      paths,
-    } = this.state;
+    const { paths } = this.state;
 
     this.setState({
       paths: paths.filter(p => p.path.id !== id),
@@ -347,40 +303,35 @@ class SketchCanvas extends Component<Props, States> {
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.deletePath,
-      [id]
+      [id],
     );
   }
 
   getPaths() {
-    const {
-      paths,
-    } = this.state;
+    const { paths } = this.state;
 
     return paths;
   }
 
-  handleOnLayout = (e: any) => { // FIXME
-    const {
-      pathsToProcess,
-    } = this.state;
+  handleOnLayout = (e: any) => {
+    // FIXME
+    this.setState(
+      {
+        initialized: true,
+        width: e.nativeEvent.layout.width,
+        height: e.nativeEvent.layout.height,
+      },
+      () => {
+        if (this._pathsToProcess.length > 0) {
+          this._pathsToProcess.forEach(p => this.addPath(p));
+        }
+      },
+    );
+  };
 
-    this.setState({
-      initialized: true,
-      width: e.nativeEvent.layout.width,
-      height: e.nativeEvent.layout.height,
-      pathsToProcess: [],
-    }, () => {
-      if (pathsToProcess.length > 0) {
-        pathsToProcess.forEach(p => this.addPath(p));
-      }
-    });
-  }
-
-  handleOnChange = (e: any) => { // FIXME
-    const {
-      onPathsChange,
-      onSketchSaved,
-    } = this.props;
+  handleOnChange = (e: any) => {
+    // FIXME
+    const { onPathsChange, onSketchSaved } = this.props;
 
     if (e.nativeEvent.hasOwnProperty('pathsUpdate')) {
       onPathsChange(e.nativeEvent.pathsUpdate);
@@ -391,18 +342,16 @@ class SketchCanvas extends Component<Props, States> {
         onSketchSaved(e.nativeEvent.success);
       }
     }
-  }
+  };
 
   _handle: any; // FIXME
-  handleRef = (ref: any) => { // FIXME
+  handleRef = (ref: any) => {
+    // FIXME
     this._handle = ReactNative.findNodeHandle(ref);
-  }
+  };
 
   render() {
-    const {
-      style,
-      localSourceImage,
-    } = this.props;
+    const { style, localSourceImage } = this.props;
 
     // const {
     //   text,
