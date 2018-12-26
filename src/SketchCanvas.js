@@ -254,7 +254,7 @@ class SketchCanvas extends Component<Props, States> {
     return lastId;
   }
 
-  addPath(data: any) {
+  addPath(data: Path) {
     // FIXME
     const { initialized, paths, pathCount, width, height } = this.state;
 
@@ -378,10 +378,5 @@ const RNSketchCanvas = requireNativeComponent('RNSketchCanvas', SketchCanvas, {
 });
 
 const SCREEN_SCALE = Platform.OS === 'ios' ? 1 : PixelRatio.get();
-
-// SketchCanvas.MAIN_BUNDLE = Platform.OS === 'ios' ? UIManager.RNSketchCanvas.Constants.MainBundlePath : '';
-// SketchCanvas.DOCUMENT = Platform.OS === 'ios' ? UIManager.RNSketchCanvas.Constants.NSDocumentDirectory : '';
-// SketchCanvas.LIBRARY = Platform.OS === 'ios' ? UIManager.RNSketchCanvas.Constants.NSLibraryDirectory : '';
-// SketchCanvas.CACHES = Platform.OS === 'ios' ? UIManager.RNSketchCanvas.Constants.NSCachesDirectory : '';
 
 module.exports = SketchCanvas;
