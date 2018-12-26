@@ -53,8 +53,8 @@ type Props = {
   onPathsChange: (e: any) => void,
   onSketchSaved: (a: any, b: any) => void,
   onStrokeEnd: (path: Path) => void,
-  onStrokeChanged: (x: number, y: number, path: PathData) => void,
-  onStrokeStart: (path: PathData) => void,
+  onStrokeChanged: (x: number, y: number, path: Path) => void,
+  onStrokeStart: (path: Path) => void,
   scale: number,
   strokeColor: string,
   strokeWidth: number,
@@ -105,13 +105,14 @@ class SketchCanvas extends Component<Props, States> {
           strokeColor,
           strokeWidth,
           onStrokeStart,
+          user,
         } = this.props;
 
         if (!touchEnabled) {
           return;
         }
 
-        const { pathCount } = this.state;
+        const { pathCount, width, height } = this.state;
 
         const e = evt.nativeEvent;
         this._offset = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
@@ -127,22 +128,39 @@ class SketchCanvas extends Component<Props, States> {
         const x = parseFloat((gestureState.x0 - this._offset.x).toFixed(2));
         const y = parseFloat((gestureState.y0 - this._offset.y).toFixed(2));
         this.addPoint(x, y);
-        this._path && onStrokeStart(this._path);
+        this._path &&
+          onStrokeStart({
+            path: this._path,
+            size: {
+              width,
+              height,
+            },
+            drawer: user,
+          });
       },
       onPanResponderMove: (evt, gestureState) => {
-        const { touchEnabled, scale, onStrokeChanged } = this.props;
+        const { touchEnabled, scale, onStrokeChanged, user } = this.props;
 
         if (!touchEnabled) {
           return;
         }
 
         if (this._path) {
+          const { width, height } = this.state;
           const px = gestureState.x0 + gestureState.dx / scale - this._offset.x;
           const py = gestureState.y0 + gestureState.dy / scale - this._offset.y;
           const x = parseFloat(px.toFixed(2));
           const y = parseFloat(py.toFixed(2));
           this.addPoint(x, y);
-          this._path && onStrokeChanged(x, y, this._path);
+          this._path &&
+            onStrokeChanged(x, y, {
+              path: this._path,
+              size: {
+                width,
+                height,
+              },
+              drawer: user,
+            });
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
