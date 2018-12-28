@@ -255,7 +255,7 @@ class SketchCanvas extends Component<Props, States> {
     const id = data.path.id;
 
     this.deletePath(id);
-    this._pathCount = id + 1;
+    this._pathCount = id;
 
     const pathData = data.path.data.map(coor => {
       const x = (coor[0] * SCREEN_SCALE * width) / data.size.width;
