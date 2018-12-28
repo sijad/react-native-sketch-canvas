@@ -175,7 +175,6 @@ class SketchCanvas extends Component<Props, States> {
             },
           };
 
-          this._pathCount++;
           onStrokeEnd(path);
         }
 
