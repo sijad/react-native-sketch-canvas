@@ -29,7 +29,6 @@ type Text = {
 };
 
 type Path = {
-  drawer: string,
   size: {
     width: number,
     height: number,
@@ -41,7 +40,7 @@ type PathData = {
   id: number,
   color: string,
   width: number,
-  data: Array<string>,
+  data: Array<Array<number>>,
 };
 
 type Props = {
@@ -61,7 +60,6 @@ type Props = {
   style: any, // FIXME
   text: Array<Text>,
   touchEnabled: boolean,
-  user: string,
 };
 
 type States = {
@@ -69,8 +67,6 @@ type States = {
   initialized: boolean,
   width: number,
   height: number,
-  paths: Array<Path>,
-  pathCount: number,
 };
 
 class SketchCanvas extends Component<Props, States> {
@@ -87,7 +83,6 @@ class SketchCanvas extends Component<Props, States> {
     style: null,
     text: null,
     touchEnabled: true,
-    user: null,
   };
 
   constructor(props: Props) {
@@ -105,25 +100,26 @@ class SketchCanvas extends Component<Props, States> {
           strokeColor,
           strokeWidth,
           onStrokeStart,
-          user,
         } = this.props;
 
         if (!touchEnabled) {
           return;
         }
 
-        const { pathCount, width, height } = this.state;
+        const { width, height } = this.state;
+
+        this._pathCount++;
 
         const e = evt.nativeEvent;
         this._offset = { x: e.pageX - e.locationX, y: e.pageY - e.locationY };
         this._path = {
-          id: pathCount,
+          id: this._pathCount,
           color: strokeColor,
           width: strokeWidth,
           data: [],
         };
 
-        this.newPath(pathCount, strokeColor, strokeWidth);
+        this.newPath(this._pathCount, strokeColor, strokeWidth);
 
         const x = parseFloat((gestureState.x0 - this._offset.x).toFixed(2));
         const y = parseFloat((gestureState.y0 - this._offset.y).toFixed(2));
@@ -135,11 +131,10 @@ class SketchCanvas extends Component<Props, States> {
               width,
               height,
             },
-            drawer: user,
           });
       },
       onPanResponderMove: (evt, gestureState) => {
-        const { touchEnabled, scale, onStrokeChanged, user } = this.props;
+        const { touchEnabled, scale, onStrokeChanged } = this.props;
 
         if (!touchEnabled) {
           return;
@@ -159,19 +154,18 @@ class SketchCanvas extends Component<Props, States> {
                 width,
                 height,
               },
-              drawer: user,
             });
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
-        const { touchEnabled, onStrokeEnd, user } = this.props;
+        const { touchEnabled, onStrokeEnd } = this.props;
 
         if (!touchEnabled) {
           return;
         }
 
         if (this._path) {
-          const { paths, width, height, pathCount } = this.state;
+          const { width, height } = this.state;
 
           const path = {
             path: this._path,
@@ -179,13 +173,9 @@ class SketchCanvas extends Component<Props, States> {
               width,
               height,
             },
-            drawer: user,
           };
 
-          this.setState({
-            paths: [...paths, path],
-            pathCount: pathCount + 1,
-          });
+          this._pathCount++;
           onStrokeEnd(path);
         }
 
@@ -203,13 +193,12 @@ class SketchCanvas extends Component<Props, States> {
     width: 0,
     height: 0,
     // text: null,
-    paths: [],
-    pathCount: 0,
   };
 
   _pathsToProcess: Array<Path> = [];
   _panResponder: any;
   _path: ?PathData;
+  _pathCount: number = 0;
   _offset: Pos;
 
   newPath(id: number, color: string, width: number) {
@@ -233,7 +222,7 @@ class SketchCanvas extends Component<Props, States> {
       [x * SCREEN_SCALE, y * SCREEN_SCALE],
     );
 
-    this._path && this._path.data.push(`${x},${y}`);
+    this._path && this._path.data.push([x, y]);
   }
 
   endPath() {
@@ -246,9 +235,6 @@ class SketchCanvas extends Component<Props, States> {
 
   clear() {
     this._path = null;
-    this.setState({
-      paths: [],
-    });
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.clear,
@@ -256,25 +242,9 @@ class SketchCanvas extends Component<Props, States> {
     );
   }
 
-  undo() {
-    const { user } = this.props;
-
-    const { paths } = this.state;
-
-    let lastId = -1;
-
-    paths.forEach(d => (lastId = d.drawer === user ? d.path.id : lastId));
-
-    if (lastId >= 0) {
-      this.deletePath(lastId);
-    }
-
-    return lastId;
-  }
-
   addPath(data: Path) {
     // FIXME
-    const { initialized, paths, pathCount, width, height } = this.state;
+    const { initialized, width, height } = this.state;
 
     if (!initialized) {
       if (!this._pathsToProcess.find(p => p.path.id == data.path.id)) {
@@ -283,17 +253,12 @@ class SketchCanvas extends Component<Props, States> {
       return;
     }
 
-    if (!paths.find(p => p.path.id === data.path.id)) {
-      paths.push(data);
-    }
+    const id = data.path.id;
 
-    this.setState({
-      paths: [...paths],
-      pathCount: pathCount + 1,
-    });
+    this.deletePath(id);
+    this._pathCount = id + 1;
 
-    const pathData = data.path.data.map((p: string) => {
-      const coor = p.split(',').map(pp => parseFloat(pp));
+    const pathData = data.path.data.map(coor => {
       const x = (coor[0] * SCREEN_SCALE * width) / data.size.width;
       const y = (coor[1] * SCREEN_SCALE * height) / data.size.height;
       return `${x},${y}`;
@@ -312,23 +277,11 @@ class SketchCanvas extends Component<Props, States> {
   }
 
   deletePath(id: number) {
-    const { paths } = this.state;
-
-    this.setState({
-      paths: paths.filter(p => p.path.id !== id),
-    });
-
     UIManager.dispatchViewManagerCommand(
       this._handle,
       UIManager.RNSketchCanvas.Commands.deletePath,
       [id],
     );
-  }
-
-  getPaths() {
-    const { paths } = this.state;
-
-    return paths;
   }
 
   handleOnLayout = (e: any) => {
